@@ -2,8 +2,9 @@ package config
 
 import (
 	"os"
+	"strings"
 
-    "github.com/yeyee2901/lord-bidoof-bot/pkg/debug"
+	"github.com/yeyee2901/lord-bidoof-bot/pkg/debug"
 
 	"gopkg.in/yaml.v2"
 )
@@ -59,13 +60,15 @@ func LoadConfig() (config AppConfig) {
 		panic(err)
 	}
 
-	if err = os.Setenv(config.Telegram.TokenEnv, string(b)); err != nil {
+	r := strings.NewReplacer("\n", "", "\r", "")
+	token := r.Replace(string(b))
+	if err = os.Setenv(config.Telegram.TokenEnv, token); err != nil {
 		panic(err)
 	}
 
-    if config.Grpc.Mode != "production" {
-        debug.DebugStruct(config)
-    }
+	if config.Grpc.Mode != "production" {
+		debug.DebugStruct(config)
+	}
 
 	return config
 }
