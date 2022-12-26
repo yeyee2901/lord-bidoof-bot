@@ -1,0 +1,23 @@
+grpc:
+  listener: 127.0.0.1:13467
+  timeout: 60
+  mode: development
+  logfile: log/zerolog.log
+
+telegram:
+  url: https://api.telegram.org
+  token_env: TELEGRAM_TOKEN
+  request_timeout: 60
+  request_retry: 3
+
+redis:
+  host: 127.0.0.1
+  port: 43061
+
+db:
+  host: 127.0.0.1:33061
+  user: your_username
+  password: your_password
+  database: local_development
+  minpool: 1
+  maxpool: 10

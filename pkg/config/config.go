@@ -1,0 +1,71 @@
+package config
+
+import (
+	"os"
+
+    "github.com/yeyee2901/lord-bidoof-bot/pkg/debug"
+
+	"gopkg.in/yaml.v2"
+)
+
+type AppConfig struct {
+	Grpc     grpcMeta     `yaml:"grpc"`
+	Telegram telegramMeta `yaml:"telegram"`
+	Redis    redisMeta    `yaml:"redis"`
+	DB       databaseMeta `yaml:"db"`
+}
+
+type grpcMeta struct {
+	Listener string `yaml:"listener"`
+	Timeout  int    `yaml:"timeout"`
+	Mode     string `yaml:"mode"`
+	Logfile  string `yaml:"logfile"`
+}
+
+type telegramMeta struct {
+	Url            string `yaml:"url"`
+	TokenEnv       string `yaml:"token_env"`
+	RequestTimeout int    `yaml:"request_timeout"`
+	RequestRetry   int    `yaml:"request_retry"`
+}
+
+type redisMeta struct {
+	Host string `yaml:"host"`
+	Port string `yaml:"port"`
+}
+
+type databaseMeta struct {
+	Host     string `yaml:"host"`
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
+	Database string `yaml:"database"`
+	Minpool  int    `yaml:"minpool"`
+	Maxpool  int    `yaml:"maxpool"`
+}
+
+func LoadConfig() (config AppConfig) {
+	b, err := os.ReadFile("setting/setting.yaml")
+	if err != nil {
+		panic(err)
+	}
+
+	if err := yaml.Unmarshal(b, &config); err != nil {
+		panic(err)
+	}
+
+	// load token to environment
+	b, err = os.ReadFile(".telegram-token")
+	if err != nil {
+		panic(err)
+	}
+
+	if err = os.Setenv(config.Telegram.TokenEnv, string(b)); err != nil {
+		panic(err)
+	}
+
+    if config.Grpc.Mode != "production" {
+        debug.DebugStruct(config)
+    }
+
+	return config
+}
