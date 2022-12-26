@@ -12,7 +12,7 @@ import (
 
 func TestGetBotStatus(t *testing.T) {
 	cfg := config.LoadConfig()
-	ds := datasource.NewDataSource(&cfg)
+	ds := datasource.NewDataSource(&cfg, nil, nil)
 	tg := NewTelegramService(ds)
 
 	resp, err := tg.GetBotStatus(context.Background())

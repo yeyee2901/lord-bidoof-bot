@@ -15,7 +15,7 @@ redis:
   port: 43061
 
 db:
-  host: 127.0.0.1:33061
+  host: 127.0.0.1:43060
   user: your_username
   password: your_password
   database: local_development
