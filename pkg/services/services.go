@@ -38,8 +38,19 @@ func (se *Services) BotStatus(ctx context.Context, pbIn *telegrampb.BotStatusReq
 	t := telegram.NewTelegramService(se.DataSource)
 
 	if botStatus, err := t.GetBotStatus(ctx); err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		// check which one causes the error
+		switch err := err.(type) {
+		case *telegram.ServerError:
+			return nil, status.Error(codes.Internal, err.Error())
+
+		case *telegram.TelegramError:
+			return nil, status.Error(err.GrpcCode, err.Error())
+
+		default:
+			return nil, status.Error(codes.Unknown, "Unknown / unhandled error"+err.Error())
+		}
 	} else {
+		// sukses
 		return &telegrampb.BotStatusResponse{
 			Id:                      botStatus.Result.Id,
 			IsBot:                   botStatus.Result.IsBot,

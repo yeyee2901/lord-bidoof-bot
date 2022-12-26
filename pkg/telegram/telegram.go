@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/yeyee2901/lord-bidoof-bot/pkg/datasource"
+	"google.golang.org/grpc/codes"
 
 	"github.com/rs/zerolog/log"
 )
@@ -33,7 +34,7 @@ func (t *TelegramService) GetBotStatus(ctx context.Context) (*RespGetMe, error) 
 	httpStatus, err := t.sendToTelegram(ctx, method, path, nil, nil, resp)
 	if err != nil {
 		log.Error().Err(err).Msg(msgType + "-sendToTelegram()")
-		return nil, err
+		return nil, &ServerError{err.Error()}
 	}
 
 	// normal logging
@@ -62,11 +63,11 @@ func (t *TelegramService) GetBotStatus(ctx context.Context) (*RespGetMe, error) 
 		if len(resp.Description) > 0 && !resp.Ok {
 			err = fmt.Errorf("API telegram returned HTTP %d: %s", httpStatus, resp.Description)
 			log.Error().Err(err).Msg(msgType + "-api.telegram.org")
-			return nil, err
+			return nil, &TelegramError{codes.Unavailable, err.Error()}
 		} else {
 			err = fmt.Errorf("Unknown error with HTTP %d", httpStatus)
 			log.Error().Err(err).Msg(msgType + "unknown")
-			return nil, err
+			return nil, &ServerError{err.Error()}
 		}
 	}
 
