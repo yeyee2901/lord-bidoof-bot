@@ -2,36 +2,47 @@ package bot
 
 import (
 	"context"
+	"database/sql"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/rs/zerolog/log"
-	"github.com/yeyee2901/lord-bidoof-bot/pkg/debug"
 )
 
-func (tg *TelegramBotService) RegisterCommands() {
-	tg.Commands = map[string]Command{
-		"hello": tg.HelloCommand,
+// for now, bot can only be used in private chats
+func (tg *TelegramBotService) StartCommand(ctx context.Context, msg *tgbotapi.Message, _ []string) {
+	chat := msg.Chat
+
+	// check if its private chat, if yes do nothing
+	if !chat.IsPrivate() {
+		tg.SendNormalChat(chat.ID, "Bidoof would like to apologize, but currently I cannot handle group chats for I am anti-social", "StartCommand.IsPrivate")
+		return
 	}
 
-	cmdRegister := []tgbotapi.BotCommand{
-		{
-			Command:     "hello",
-			Description: "say something",
-		},
+	// check if user chat id is already registered
+	_, err := tg.GetPrivateChat(chat.ID)
+	if err == nil {
+		text := msg.From.FirstName + ", looks like you've already awaken Grand Lord Bidoof!"
+		tg.SendNormalChat(chat.ID, text, "StartCommand.GetPrivateChat")
+		return
 	}
 
-	setBotCmd := tgbotapi.NewSetMyCommandsWithScope(tgbotapi.BotCommandScope{Type: "all_private_chats"}, cmdRegister...)
-	if tgResp, err := tg.BotAPI.Request(setBotCmd); err != nil {
+	switch {
+	// user has not started the bot yet, so register them
+	case err == sql.ErrNoRows:
+		tg.savePrivateChat(chat)
+
+		// inform user
+		text := msg.From.FirstName + ", thank you for waking me. Bidoof bless you."
+		tg.SendNormalChat(chat.ID, text, "StartCommand.savePrivateChat")
+
+	// system error (db)
+	case err != nil:
 		panic(err)
-	} else {
-		debug.DebugStruct(tgResp)
-		if !tgResp.Ok {
-			panic("Failed to register bot commands: " + tgResp.Description)
-		}
 	}
 }
 
+// Say something to another user via bidoof
 func (tg *TelegramBotService) HelloCommand(ctx context.Context, msg *tgbotapi.Message, args []string) {
 	// validate hello command
 	if len(args) != 2 {

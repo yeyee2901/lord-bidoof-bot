@@ -15,9 +15,9 @@ import (
 type Command func(context.Context, *tgbotapi.Message, []string)
 
 type TelegramBotService struct {
-	*tgbotapi.BotAPI
 	*datasource.DataSource
 
+	BotAPI   *tgbotapi.BotAPI
 	Commands map[string]Command
 }
 
@@ -26,7 +26,7 @@ func NewTelegramBotService(bot *tgbotapi.BotAPI, ds *datasource.DataSource) *Tel
 
 	tg.DataSource = ds
 	tg.BotAPI = bot
-	tg.RegisterCommands()
+	tg.InitBot()
 
 	return tg
 }
@@ -85,10 +85,8 @@ func (tg *TelegramBotService) handleCommand(ctx context.Context, msg *tgbotapi.M
 		log.Warn().Str("command", msg.Command()).Msg("command.error")
 
 		// inform user it was unknown command
-		msg := tgbotapi.NewMessage(msg.Chat.ID, "Unknown command")
-		if _, err := tg.BotAPI.Send(msg); err != nil {
-			log.Error().Err(err).Interface("message", msg).Msg("send.error")
-		}
+		text := fmt.Sprintf("Unknown command `/%s`", msg.Command())
+		tg.SendNormalChat(msg.Chat.ID, text, "handleCommand")
 
 		return
 	}
@@ -101,11 +99,6 @@ func (tg *TelegramBotService) handleCommand(ctx context.Context, msg *tgbotapi.M
 
 func (tg *TelegramBotService) handlePanic(err error, msg *tgbotapi.Message) {
 	log.Error().Err(err).Interface("message", msg).Msg("command.panic")
-
 	text := fmt.Sprintf("I'm sorry, but Bidoof currently cannot process that, %s %s :(", msg.From.FirstName, msg.From.LastName)
-	toUser := tgbotapi.NewMessage(msg.Chat.ID, text)
-
-	if _, err := tg.BotAPI.Send(toUser); err != nil {
-		log.Error().Err(err).Interface("message", msg).Msg("send.error")
-	}
+	tg.SendNormalChat(msg.Chat.ID, text, "handlePanic")
 }
