@@ -26,9 +26,7 @@ func NewTelegramBotService(bot *tgbotapi.BotAPI, ds *datasource.DataSource) *Tel
 
 	tg.DataSource = ds
 	tg.BotAPI = bot
-	tg.Commands = map[string]Command{
-		"hello": tg.HelloCommand,
-	}
+	tg.RegisterCommands()
 
 	return tg
 }

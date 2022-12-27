@@ -6,7 +6,31 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/rs/zerolog/log"
+	"github.com/yeyee2901/lord-bidoof-bot/pkg/debug"
 )
+
+func (tg *TelegramBotService) RegisterCommands() {
+	tg.Commands = map[string]Command{
+		"hello": tg.HelloCommand,
+	}
+
+	cmdRegister := []tgbotapi.BotCommand{
+		{
+			Command:     "hello",
+			Description: "say something",
+		},
+	}
+
+	setBotCmd := tgbotapi.NewSetMyCommandsWithScope(tgbotapi.BotCommandScope{Type: "all_private_chats"}, cmdRegister...)
+	if tgResp, err := tg.BotAPI.Request(setBotCmd); err != nil {
+		panic(err)
+	} else {
+		debug.DebugStruct(tgResp)
+		if !tgResp.Ok {
+			panic("Failed to register bot commands: " + tgResp.Description)
+		}
+	}
+}
 
 func (tg *TelegramBotService) HelloCommand(ctx context.Context, msg *tgbotapi.Message, args []string) {
 	// validate hello command
