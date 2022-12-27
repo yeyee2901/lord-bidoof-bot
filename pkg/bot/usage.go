@@ -9,4 +9,6 @@ You can also use markdown to format your message
 - underline: __text__
 - strikethrough: ~text~
 - url: [text](https://google.com)
+
+You can long press the command in the menu button to paste it into your text box instead of sending it to the bot directly
 `
