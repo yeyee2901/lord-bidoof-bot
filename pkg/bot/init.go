@@ -2,7 +2,6 @@ package bot
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/yeyee2901/lord-bidoof-bot/pkg/debug"
 )
 
 func (tg *TelegramBotService) InitBot() {
@@ -13,7 +12,7 @@ func (tg *TelegramBotService) RegisterCommands() {
 	tg.Commands = map[string]Command{
 		"hello": tg.UnimplementedCommand,
 		"start": tg.StartCommand,
-		"stop":  tg.UnimplementedCommand,
+		"stop":  tg.StopCommand,
 	}
 
 	cmdRegister := []tgbotapi.BotCommand{
@@ -35,7 +34,6 @@ func (tg *TelegramBotService) RegisterCommands() {
 	if tgResp, err := tg.BotAPI.Request(setBotCmd); err != nil {
 		panic(err)
 	} else {
-		debug.DebugStruct(tgResp)
 		if !tgResp.Ok {
 			panic("Failed to register bot commands: " + tgResp.Description)
 		}

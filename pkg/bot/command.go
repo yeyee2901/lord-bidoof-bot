@@ -3,6 +3,7 @@ package bot
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -36,6 +37,32 @@ func (tg *TelegramBotService) StartCommand(ctx context.Context, msg *tgbotapi.Me
 	// system error (db)
 	case err != nil:
 		panic(err)
+	}
+}
+
+func (tg *TelegramBotService) StopCommand(ctx context.Context, msg *tgbotapi.Message, _ []string) {
+	chat := msg.Chat
+
+	switch _, err := tg.GetPrivateChat(chat.ID); {
+
+	// no user found in DB, then do nothing
+	case err == sql.ErrNoRows:
+		text := "uh-oh, Who art thou? Zzzzz..."
+		tg.SendNormalChat(chat.ID, text, "StopCommand.GetPrivateChat")
+		return
+
+	// system error (db)
+	case err != nil:
+		panic(err)
+
+	// user found, then delete the chat record
+	case err == nil:
+		if err := tg.DeletePrivateChat(chat.ID); err != nil {
+			panic(err)
+		}
+
+		text := fmt.Sprintf(`*Thank you for using me*\! If you need me, you can always /start me again or find me at t\.me/grandlordbidoof\_bot\. You can also safely delete this chat if you want\. Bidoof bless you\.`)
+		tg.SendMarkdownChat(chat.ID, text, "StopCommand.DeletePrivateChat")
 	}
 }
 

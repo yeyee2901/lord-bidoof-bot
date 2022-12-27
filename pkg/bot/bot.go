@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -83,6 +84,20 @@ func (tg *TelegramBotService) handleCommand(ctx context.Context, msg *tgbotapi.M
 	if !msg.Chat.IsPrivate() {
 		tg.SendNormalChat(msg.Chat.ID, "Bidoof would like to apologize, but currently I cannot handle group chats for I am anti-social", "StartCommand.IsPrivate")
 		return
+	}
+
+	// check if this user can send command
+	if msg.Command() != "start" {
+		switch _, err := tg.GetPrivateChat(msg.Chat.ID); {
+
+		// user is not registered in DB: do nothing
+		case err == sql.ErrNoRows:
+			return
+
+		// db error
+		case err != nil:
+			panic(err)
+		}
 	}
 
 	// check if command exists
