@@ -11,3 +11,11 @@ func (tg *TelegramBotService) SendNormalChat(chatId int64, text, logSubject stri
 		log.Error().Err(err).Interface("message", msg).Msg("send.error-" + logSubject)
 	}
 }
+
+func (tg *TelegramBotService) SendMarkdownChat(chatId int64, text, logSubject string) {
+	msg := tgbotapi.NewMessage(chatId, text)
+	msg.ParseMode = tgbotapi.ModeMarkdownV2
+	if _, err := tg.BotAPI.Send(msg); err != nil {
+		log.Error().Err(err).Interface("message", msg).Msg("send.error-" + logSubject)
+	}
+}

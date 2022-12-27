@@ -29,14 +29,12 @@ func (ds *DataSource) InsertPrivateChatToDB(chat *PrivateChat) error {
 		return err
 	}
 
-	_, err = tx.NamedExec(q, chat)
-	if err != nil {
+	if _, err = tx.NamedExec(q, chat); err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	err = tx.Commit()
-	if err != nil {
+	if err = tx.Commit(); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -61,4 +59,33 @@ func (ds *DataSource) GetPrivateChat(chatId int64) (*PrivateChat, error) {
 	err := ds.DB.Get(res, q, args...)
 
 	return res, err
+}
+
+func (ds *DataSource) DeletePrivateChat(chatId int64) error {
+	var args []any
+	args = append(args, chatId)
+
+	q := `
+        DELETE FROM 
+            telegram_private_chat
+        WHERE
+            chat_id = ?
+    `
+
+	tx, err := ds.DB.Beginx()
+	if err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec(q, args...); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return nil
 }

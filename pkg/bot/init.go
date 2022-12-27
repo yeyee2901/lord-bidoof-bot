@@ -11,8 +11,9 @@ func (tg *TelegramBotService) InitBot() {
 
 func (tg *TelegramBotService) RegisterCommands() {
 	tg.Commands = map[string]Command{
-		"hello": tg.HelloCommand,
+		"hello": tg.UnimplementedCommand,
 		"start": tg.StartCommand,
+		"stop":  tg.UnimplementedCommand,
 	}
 
 	cmdRegister := []tgbotapi.BotCommand{
@@ -23,6 +24,10 @@ func (tg *TelegramBotService) RegisterCommands() {
 		{
 			Command:     "start",
 			Description: "Start the bot",
+		},
+		{
+			Command:     "stop",
+			Description: "Stop bot interaction for this user",
 		},
 	}
 

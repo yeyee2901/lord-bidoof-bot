@@ -79,6 +79,12 @@ func (tg *TelegramBotService) HandleUpdate(event tgbotapi.Update) {
 }
 
 func (tg *TelegramBotService) handleCommand(ctx context.Context, msg *tgbotapi.Message) {
+	// check is private chat
+	if !msg.Chat.IsPrivate() {
+		tg.SendNormalChat(msg.Chat.ID, "Bidoof would like to apologize, but currently I cannot handle group chats for I am anti-social", "StartCommand.IsPrivate")
+		return
+	}
+
 	// check if command exists
 	handler, exist := tg.Commands[msg.Command()]
 	if !exist {
@@ -91,9 +97,6 @@ func (tg *TelegramBotService) handleCommand(ctx context.Context, msg *tgbotapi.M
 		return
 	}
 
-	// handle command normally, internal command error should not be informed
-	// to user
-	log.Info().Str("command", msg.Command()).Msg("command.handle")
 	handler(ctx, msg, strings.Split(msg.CommandArguments(), " "))
 }
 

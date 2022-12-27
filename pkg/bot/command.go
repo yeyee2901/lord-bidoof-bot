@@ -9,15 +9,12 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// for now, bot can only be used in private chats
+func (tg *TelegramBotService) UnimplementedCommand(ctx context.Context, msg *tgbotapi.Message, _ []string) {
+	panic("Unimplemented")
+}
+
 func (tg *TelegramBotService) StartCommand(ctx context.Context, msg *tgbotapi.Message, _ []string) {
 	chat := msg.Chat
-
-	// check if its private chat, if yes do nothing
-	if !chat.IsPrivate() {
-		tg.SendNormalChat(chat.ID, "Bidoof would like to apologize, but currently I cannot handle group chats for I am anti-social", "StartCommand.IsPrivate")
-		return
-	}
 
 	// check if user chat id is already registered
 	_, err := tg.GetPrivateChat(chat.ID)
