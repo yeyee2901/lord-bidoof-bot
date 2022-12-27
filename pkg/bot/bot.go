@@ -12,7 +12,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-type Command func(context.Context, []string) error
+type Command func(context.Context, *tgbotapi.Message, []string)
 
 type TelegramBotService struct {
 	*tgbotapi.BotAPI
@@ -80,7 +80,7 @@ func (tg *TelegramBotService) HandleUpdate(event tgbotapi.Update) {
 	}
 }
 
-func (tg *TelegramBotService) handleCommand(ctx context.Context, msg *tgbotapi.Message) error {
+func (tg *TelegramBotService) handleCommand(ctx context.Context, msg *tgbotapi.Message) {
 	// check if command exists
 	handler, exist := tg.Commands[msg.Command()]
 	if !exist {
@@ -89,18 +89,16 @@ func (tg *TelegramBotService) handleCommand(ctx context.Context, msg *tgbotapi.M
 		// inform user it was unknown command
 		msg := tgbotapi.NewMessage(msg.Chat.ID, "Unknown command")
 		if _, err := tg.BotAPI.Send(msg); err != nil {
-			return err
+			log.Error().Err(err).Interface("message", msg).Msg("send.error")
 		}
 
-		return nil
+		return
 	}
 
 	// handle command normally, internal command error should not be informed
-	// handled to user
+	// to user
 	log.Info().Str("command", msg.Command()).Msg("command.handle")
-	handler(ctx, strings.Split(msg.CommandArguments(), " "))
-
-	return nil
+	handler(ctx, msg, strings.Split(msg.CommandArguments(), " "))
 }
 
 func (tg *TelegramBotService) handlePanic(err error, msg *tgbotapi.Message) {
