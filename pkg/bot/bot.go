@@ -17,6 +17,7 @@ type Command func(context.Context, []string) error
 type TelegramBotService struct {
 	*tgbotapi.BotAPI
 	*datasource.DataSource
+
 	Commands map[string]Command
 }
 
@@ -37,26 +38,24 @@ func (tg *TelegramBotService) HandleUpdate(event tgbotapi.Update) {
 	updateCtx, cancel := context.WithTimeout(context.Background(), time.Duration(tg.Config.Telegram.Bot.Timeout)*time.Second)
 	defer cancel()
 	updateDone := make(chan struct{})
+	commandPanic := make(chan error)
 
 	// task goroutine
 	go func() {
 		defer func() {
-			updateDone <- struct{}{}
+			// same as app level recovery, this handle command panics
+			// and reports it to sender & logfile
+			if err := recover(); err != nil {
+				commandPanic <- fmt.Errorf("%v", err)
+			} else {
+				// normal flow
+				updateDone <- struct{}{}
+			}
 		}()
 
+		// check if its a command, otherwise do nothing
 		if event.Message.IsCommand() {
-			if handler, exist := tg.Commands[event.Message.Command()]; exist {
-				log.Info().Str("command", event.Message.Command()).Msg("handle.command")
-				handler(updateCtx, strings.Split(event.Message.CommandArguments(), " "))
-			} else {
-				log.Warn().Str("command", event.Message.Command()).Msg("unknown.command")
-
-				// inform user it was unknown command
-				msg := tgbotapi.NewMessage(event.Message.Chat.ID, "Unknown command")
-				if _, err := tg.BotAPI.Send(msg); err != nil {
-					log.Error().Err(err).Msg("send.error")
-				}
-			}
+			tg.handleCommand(updateCtx, event.Message)
 		}
 	}()
 
@@ -72,8 +71,45 @@ func (tg *TelegramBotService) HandleUpdate(event tgbotapi.Update) {
 			return
 
 		case <-updateDone:
-			fmt.Println("task done")
+			return
+
+		case err := <-commandPanic:
+			tg.handlePanic(err, event.Message)
 			return
 		}
+	}
+}
+
+func (tg *TelegramBotService) handleCommand(ctx context.Context, msg *tgbotapi.Message) error {
+	// check if command exists
+	handler, exist := tg.Commands[msg.Command()]
+	if !exist {
+		log.Warn().Str("command", msg.Command()).Msg("command.error")
+
+		// inform user it was unknown command
+		msg := tgbotapi.NewMessage(msg.Chat.ID, "Unknown command")
+		if _, err := tg.BotAPI.Send(msg); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	// handle command normally, internal command error should not be informed
+	// handled to user
+	log.Info().Str("command", msg.Command()).Msg("command.handle")
+	handler(ctx, strings.Split(msg.CommandArguments(), " "))
+
+	return nil
+}
+
+func (tg *TelegramBotService) handlePanic(err error, msg *tgbotapi.Message) {
+	log.Error().Err(err).Interface("message", msg).Msg("command.panic")
+
+	text := fmt.Sprintf("I'm sorry, but Bidoof currently cannot process that, %s %s :(", msg.From.FirstName, msg.From.LastName)
+	toUser := tgbotapi.NewMessage(msg.Chat.ID, text)
+
+	if _, err := tg.BotAPI.Send(toUser); err != nil {
+		log.Error().Err(err).Interface("message", msg).Msg("send.error")
 	}
 }
