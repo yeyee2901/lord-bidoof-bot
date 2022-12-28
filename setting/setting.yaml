@@ -5,10 +5,7 @@ grpc:
   logfile: log/zerolog.log
 
 telegram:
-  url: https://api.telegram.org
   token_env: TELEGRAM_TOKEN
-  request_timeout: 60
-  request_retry: 3
   bot:
     logfile: log/bot.log
     timeout: 60

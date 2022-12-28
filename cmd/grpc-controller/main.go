@@ -3,8 +3,11 @@ package main
 import (
 	"fmt"
 	"net"
+	"os"
+	"os/signal"
 	"time"
 
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yeyee2901/lord-bidoof-bot/pkg/config"
 	"github.com/yeyee2901/lord-bidoof-bot/pkg/datasource"
 	"github.com/yeyee2901/lord-bidoof-bot/pkg/services"
@@ -30,7 +33,7 @@ func main() {
 	defer app.Cleanup()
 
 	if err := app.Run(); err != nil {
-		panic(err)
+		log.Info().AnErr("error", err).Msg("EXIT")
 	}
 }
 
@@ -56,13 +59,49 @@ func InitApp() *App {
 	return app
 }
 
-func (app *App) Run() (err error) {
-	if lst, err := net.Listen("tcp", app.Config.Grpc.Listener); err == nil {
-		fmt.Println("Server listening at", app.Config.Grpc.Listener)
-		err = app.GrpcServer.Serve(lst)
-	}
+func (app *App) Run() error {
+	log.Info().Msg("START")
 
-	return err
+	// channel propagating handling error & OS interrupt
+	errChan := make(chan error)
+	fatalError := make(chan error, 1)
+	sigChan := make(chan os.Signal)
+	signal.Notify(sigChan, os.Interrupt)
+
+	// create listener for grpc server to attach
+	lst, err := net.Listen("tcp", app.Config.Grpc.Listener)
+	if err != nil {
+		return err
+	}
+	defer lst.Close()
+
+	// run grpc server
+	go func() {
+		// make sure we stop the server to free the resource
+		defer func() {
+			if err := recover(); err != nil {
+				fatalError <- fmt.Errorf("%v", err)
+			}
+			app.GrpcServer.GracefulStop()
+		}()
+
+		fmt.Println("Server listening at", app.Config.Grpc.Listener)
+		errChan <- app.GrpcServer.Serve(lst)
+	}()
+
+	for {
+		select {
+		case <-sigChan:
+			return fmt.Errorf("Server interrupted")
+
+		case err := <-errChan:
+			return err
+
+		case err := <-fatalError:
+			log.Error().Err(err).Msg("FATAL")
+			return err
+		}
+	}
 }
 
 func (app *App) InitLogger() {
@@ -110,7 +149,18 @@ func (app *App) InitRedis() {
 func (app *App) InitGrpc() {
 	app.GrpcServer = grpc.NewServer()
 	ds := datasource.NewDataSource(app.Config, app.DB, app.Redis)
-	s := services.NewServices(app.GrpcServer, ds)
+
+	// get bot token from environment
+	token := os.Getenv(app.Config.Telegram.TokenEnv)
+	if len(token) == 0 {
+		panic("Empty bot token in environment variable")
+	}
+	bot, err := tgbotapi.NewBotAPI(token)
+	if err != nil {
+		panic(err)
+	}
+
+	s := services.NewServices(app.GrpcServer, ds, bot)
 	s.InitServices()
 }
 

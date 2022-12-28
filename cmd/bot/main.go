@@ -99,7 +99,6 @@ func initLogger(cfg *config.AppConfig) {
 	})
 	log.Logger = log.With().Caller().Logger()
 	log.Logger = log.With().Timestamp().Logger()
-
 }
 
 func initRedis(cfg *config.AppConfig) *redis.Client {
