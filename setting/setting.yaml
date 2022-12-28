@@ -12,6 +12,10 @@ telegram:
   bot:
     logfile: log/bot.log
     timeout: 60
+    messages:
+      panic: I'm sorry, but Bidoof currently cannot process that :(
+      unknown_command: Bidoof doesn't understand that move
+      group_chat: Bidoof would like to apologize, but currently I cannot handle group chats for I am anti-social
 
 redis:
   host: 127.0.0.1

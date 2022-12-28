@@ -32,8 +32,15 @@ type telegramMeta struct {
 }
 
 type botMeta struct {
-	Logfile string `yaml:"logfile"`
-	Timeout int    `yaml:"timeout"`
+	Logfile  string     `yaml:"logfile"`
+	Timeout  int        `yaml:"timeout"`
+	Messages botMessage `yaml:"messages"`
+}
+
+type botMessage struct {
+	Panic          string `yaml:"panic"`
+	UnknownCommand string `yaml:"unknown_command"`
+	GroupChat      string `yaml:"group_chat"`
 }
 
 type redisMeta struct {
