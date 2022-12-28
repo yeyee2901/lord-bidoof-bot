@@ -10,7 +10,7 @@ func (tg *TelegramBotService) InitBot() {
 
 func (tg *TelegramBotService) RegisterCommands() {
 	tg.Commands = map[string]Command{
-		"hello": tg.UnimplementedCommand,
+		"hello": tg.HelloCommand,
 		"start": tg.StartCommand,
 		"stop":  tg.StopCommand,
 	}

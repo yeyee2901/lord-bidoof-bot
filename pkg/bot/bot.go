@@ -39,7 +39,7 @@ func (tg *TelegramBotService) HandleUpdate(event tgbotapi.Update) {
 	updateDone := make(chan struct{})
 	commandPanic := make(chan error)
 
-	// task goroutine
+	// update handler goroutine with recovery function
 	go func() {
 		defer func() {
 			// same as app level recovery, this handle command panics
@@ -82,11 +82,11 @@ func (tg *TelegramBotService) HandleUpdate(event tgbotapi.Update) {
 func (tg *TelegramBotService) handleCommand(ctx context.Context, msg *tgbotapi.Message) {
 	// check is private chat
 	if !msg.Chat.IsPrivate() {
-		tg.SendNormalChat(msg.Chat.ID, "Bidoof would like to apologize, but currently I cannot handle group chats for I am anti-social", "StartCommand.IsPrivate")
+		tg.SendNormalChat(msg.Chat.ID, tg.Config.Telegram.Bot.Messages.GroupChat, "StartCommand.IsPrivate")
 		return
 	}
 
-	// check if this user can send command
+	// check if this user can send command, but pass it through if it was /start command
 	if msg.Command() != "start" {
 		switch _, err := tg.GetPrivateChat(msg.Chat.ID); {
 
@@ -106,8 +106,7 @@ func (tg *TelegramBotService) handleCommand(ctx context.Context, msg *tgbotapi.M
 		log.Warn().Str("command", msg.Command()).Msg("command.error")
 
 		// inform user it was unknown command
-		text := fmt.Sprintf("Unknown command `/%s`", msg.Command())
-		tg.SendNormalChat(msg.Chat.ID, text, "handleCommand")
+		tg.SendNormalChat(msg.Chat.ID, tg.Config.Telegram.Bot.Messages.UnknownCommand, "handleCommand")
 
 		return
 	}
@@ -117,6 +116,6 @@ func (tg *TelegramBotService) handleCommand(ctx context.Context, msg *tgbotapi.M
 
 func (tg *TelegramBotService) handlePanic(err error, msg *tgbotapi.Message) {
 	log.Error().Err(err).Interface("message", msg).Msg("command.panic")
-	text := fmt.Sprintf("I'm sorry, but Bidoof currently cannot process that, %s %s :(", msg.From.FirstName, msg.From.LastName)
+	text := fmt.Sprintf(tg.Config.Telegram.Bot.Messages.Panic)
 	tg.SendNormalChat(msg.Chat.ID, text, "handlePanic")
 }
