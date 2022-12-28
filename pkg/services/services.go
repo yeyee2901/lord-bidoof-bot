@@ -110,10 +110,17 @@ func (se *Services) GetPrivateChat(ctx context.Context, pbIn *telegrampb.GetPriv
 	thisCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	errChan := make(chan error)
+	fatalErr := make(chan error)
 	result := make(chan []datasource.PrivateChat)
 
 	// dispatch job to goroutine
 	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				fatalErr <- fmt.Errorf("%v", err)
+			}
+		}()
+
 		var dbRes []datasource.PrivateChat
 		var err error
 		if len(filter) != 0 {
@@ -146,6 +153,11 @@ func (se *Services) GetPrivateChat(ctx context.Context, pbIn *telegrampb.GetPriv
 		case err := <-errChan:
 			log.Error().Err(err).Msg("rpc.GetPrivateChat.database")
 			return nil, status.Error(codes.Internal, "An error occured when querying to database")
+
+		// fatal error happened
+		case err := <-fatalErr:
+			log.Error().Err(err).Msg("rpc.GetPrivateChat.FATAL")
+			return nil, status.Error(codes.Internal, "Fatal internal server error")
 
 		// successful case
 		case res := <-result:
