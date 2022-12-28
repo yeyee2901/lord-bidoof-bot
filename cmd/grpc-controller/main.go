@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -69,7 +70,6 @@ func (app *App) Run() error {
 	sigChan := make(chan os.Signal)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 
-	// create listener for grpc server to attach
 	lst, err := net.Listen("tcp", app.Config.Grpc.Listener)
 	if err != nil {
 		return err
@@ -92,8 +92,8 @@ func (app *App) Run() error {
 
 	for {
 		select {
-		case <-sigChan:
-			return fmt.Errorf("Server interrupted")
+		case sig := <-sigChan:
+			return fmt.Errorf("Server interrupted, received signal: %v", strings.ToUpper(sig.String()))
 
 		case err := <-errChan:
 			return err
