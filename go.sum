@@ -93,12 +93,8 @@ github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
 github.com/stretchr/testify v1.8.1 h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKsk=
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
-github.com/yeyee2901/proto-lord-bidoof-bot v0.0.0-20221223064322-3e71de20a7b1 h1:U9lgmVQicV7c+e0Z1mm/c8OJosiaprqYNEbpYgMHaw8=
-github.com/yeyee2901/proto-lord-bidoof-bot v0.0.0-20221223064322-3e71de20a7b1/go.mod h1:25z2RbbIF8BvvtXp7dlf5Ee3RbOK8KEvAGMKTopcWfQ=
-github.com/yeyee2901/proto-lord-bidoof-bot v0.0.0-20221228030859-84146636ff0f h1:FXMRpCjnPswK7St2oZRMLmdadJ0i6CA+BrHPI2xEdf0=
-github.com/yeyee2901/proto-lord-bidoof-bot v0.0.0-20221228030859-84146636ff0f/go.mod h1:25z2RbbIF8BvvtXp7dlf5Ee3RbOK8KEvAGMKTopcWfQ=
-github.com/yeyee2901/proto-lord-bidoof-bot v0.0.0-20221228083011-5db01b9ac7dd h1:O5rJZN/HZOqA+XAPv974SzUKQswBmCDNhnD9/ou8/2g=
-github.com/yeyee2901/proto-lord-bidoof-bot v0.0.0-20221228083011-5db01b9ac7dd/go.mod h1:25z2RbbIF8BvvtXp7dlf5Ee3RbOK8KEvAGMKTopcWfQ=
+github.com/yeyee2901/proto-lord-bidoof-bot v0.0.0-20221228090954-c8877dcf4a2f h1:co6oEWgc3/IE44rnWATfFUulseU0dMZZUuS/wfcadG4=
+github.com/yeyee2901/proto-lord-bidoof-bot v0.0.0-20221228090954-c8877dcf4a2f/go.mod h1:25z2RbbIF8BvvtXp7dlf5Ee3RbOK8KEvAGMKTopcWfQ=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=

@@ -21,6 +21,10 @@ func NewDataSource(c *config.AppConfig, db *sqlx.DB, r *redis.Client) *DataSourc
 	return &DataSource{c, db, r}
 }
 
+func NewQueryFilter() QueryFilter {
+	return make(QueryFilter)
+}
+
 func (ds *DataSource) InsertPrivateChatToDB(chat *PrivateChat) error {
 	q := `
         INSERT INTO telegram_private_chat

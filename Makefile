@@ -7,7 +7,7 @@ GO_TEST_FLAGS 	+= 	-v -c -coverpkg ./...
 # override-able
 GO_RUN_TEST		= 	^Test
 
-.PHONY: run test
+.PHONY: run test update_proto
 
 run:
 	go run ./cmd/grpc-controller
