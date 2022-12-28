@@ -9,7 +9,7 @@ require (
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/rs/zerolog v1.28.0
 	github.com/stretchr/testify v1.8.1
-	github.com/yeyee2901/proto-lord-bidoof-bot v0.0.0-20221228030859-84146636ff0f
+	github.com/yeyee2901/proto-lord-bidoof-bot v0.0.0-20221228083011-5db01b9ac7dd
 	google.golang.org/grpc v1.51.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.4.0

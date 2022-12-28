@@ -1,3 +1,6 @@
+# PROTOBUF
+PROTO_REPO = github.com/yeyee2901/proto-lord-bidoof-bot@master
+
 # GOLANG VARIABLES
 GO_TEST_FLAGS 	+= 	-v -c -coverpkg ./...
 
@@ -8,6 +11,9 @@ GO_RUN_TEST		= 	^Test
 
 run:
 	go run ./cmd/grpc-controller
+
+update_proto:
+	go get -x -u ${PROTO_REPO}
 
 test:
 	mkdir -p test/config
