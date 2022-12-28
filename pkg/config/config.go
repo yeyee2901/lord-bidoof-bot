@@ -24,11 +24,8 @@ type grpcMeta struct {
 }
 
 type telegramMeta struct {
-	Url            string  `yaml:"url"`
-	TokenEnv       string  `yaml:"token_env"`
-	RequestTimeout int     `yaml:"request_timeout"`
-	RequestRetry   int     `yaml:"request_retry"`
-	Bot            botMeta `yaml:"bot"`
+	TokenEnv string  `yaml:"token_env"`
+	Bot      botMeta `yaml:"bot"`
 }
 
 type botMeta struct {

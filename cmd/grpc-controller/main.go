@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -62,18 +63,17 @@ func InitApp() *App {
 func (app *App) Run() error {
 	log.Info().Msg("START")
 
-	// channel propagating handling error & OS interrupt
+	// channel for propagating handling error & OS interrupt
 	errChan := make(chan error)
 	fatalError := make(chan error, 1)
 	sigChan := make(chan os.Signal)
-	signal.Notify(sigChan, os.Interrupt)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 
 	// create listener for grpc server to attach
 	lst, err := net.Listen("tcp", app.Config.Grpc.Listener)
 	if err != nil {
 		return err
 	}
-	defer lst.Close()
 
 	// run grpc server
 	go func() {
@@ -83,6 +83,7 @@ func (app *App) Run() error {
 				fatalError <- fmt.Errorf("%v", err)
 			}
 			app.GrpcServer.GracefulStop()
+			lst.Close()
 		}()
 
 		fmt.Println("Server listening at", app.Config.Grpc.Listener)

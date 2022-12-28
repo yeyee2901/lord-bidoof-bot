@@ -1,131 +1,115 @@
 package telegram
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/http"
-	"os"
 	"time"
 
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yeyee2901/lord-bidoof-bot/pkg/datasource"
 	"google.golang.org/grpc/codes"
-
-	"github.com/rs/zerolog/log"
+	"google.golang.org/grpc/status"
 )
 
 type TelegramService struct {
+	BotAPI *tgbotapi.BotAPI
 	*datasource.DataSource
 }
 
-func NewTelegramService(ds *datasource.DataSource) *TelegramService {
-	return &TelegramService{ds}
+func NewTelegramService(ds *datasource.DataSource, bot *tgbotapi.BotAPI) *TelegramService {
+	return &TelegramService{bot, ds}
 }
 
+// get the bot status
 func (t *TelegramService) GetBotStatus(ctx context.Context) (*RespGetMe, error) {
-	var (
-		msgType = "telegram.GetBotStatus"
-		path    = "/getMe"
-		method  = "GET"
-	)
+	// goroutine goes brrrr
+	thisCtx, cancel := context.WithTimeout(ctx, time.Duration(t.Config.Telegram.Bot.Timeout)*time.Second)
+	defer cancel()
+	errChan := make(chan error)
+	result := make(chan *RespGetMe)
 
-	resp := new(RespGetMe)
-	httpStatus, err := t.sendToTelegram(ctx, method, path, nil, nil, resp)
-	if err != nil {
-		log.Error().Err(err).Msg(msgType + "-sendToTelegram()")
-		return nil, &ServerError{err.Error()}
-	}
-
-	// normal logging
-	loggingDone := make(chan struct{})
-	go func(done chan<- struct{}) {
-		defer func() {
-			done <- struct{}{}
-		}()
-
-		log.Info().
-			AnErr("error", err).
-			Interface("header", nil).
-			Interface("req", nil).
-			Interface("resp", resp).
-			Str("endpoint", path).
-			Str("method", method).
-			Msg(msgType)
-	}(loggingDone)
-
-	defer func() {
-		<-loggingDone
+	// task goroutine
+	go func() {
+		if user, err := t.BotAPI.GetMe(); err != nil {
+			errChan <- err
+		} else {
+			result <- &RespGetMe{
+				Id:                      uint64(user.ID),
+				IsBot:                   user.IsBot,
+				FirstName:               user.FirstName,
+				LastName:                user.LastName,
+				Username:                user.UserName,
+				CanJoinGroups:           user.CanJoinGroups,
+				CanReadAllGroupMessages: user.CanReadAllGroupMessages,
+			}
+		}
 	}()
 
-	// handle http status
-	if httpStatus != http.StatusOK {
-		if len(resp.Description) > 0 && !resp.Ok {
-			err = fmt.Errorf("API telegram returned HTTP %d: %s", httpStatus, resp.Description)
-			log.Error().Err(err).Msg(msgType + "-api.telegram.org")
-			return nil, &TelegramError{codes.Unavailable, err.Error()}
-		} else {
-			err = fmt.Errorf("Unknown error with HTTP %d", httpStatus)
-			log.Error().Err(err).Msg(msgType + "unknown")
-			return nil, &ServerError{err.Error()}
+	for {
+		select {
+
+		// task timeout, or somehow canceled
+		case <-thisCtx.Done():
+			if err := thisCtx.Err(); err == context.DeadlineExceeded {
+				return nil, status.Error(codes.DeadlineExceeded, "Timeout")
+			} else {
+				return nil, status.Error(codes.Canceled, err.Error())
+			}
+
+		// error from telegram
+		case err := <-errChan:
+			return nil, status.Error(codes.Aborted, err.Error())
+
+		case res := <-result:
+			return res, nil
 		}
 	}
-
-	return resp, nil
 }
 
-func (t *TelegramService) sendToTelegram(
-	ctx context.Context,
-	method string,
-	endpoint string,
-	header map[string]string,
-	payload any,
-	resp any,
-) (httpStatus int, err error) {
-	client := new(http.Client)
-
-	// create context for this http request (with timeout)
-	tgContext, cancel := context.WithTimeout(ctx, time.Duration(t.Config.Telegram.RequestTimeout)*time.Second)
+// send chat to user with `chatId`
+func (t *TelegramService) SendChat(ctx context.Context, chatId int64, message string, useMarkdown bool) (*RespSendMessage, error) {
+	// goroutine goes brrrr
+	chatCtx, cancel := context.WithTimeout(ctx, time.Duration(t.Config.Telegram.Bot.Timeout)*time.Second)
 	defer cancel()
+	errChan := make(chan error)
+	result := make(chan *RespSendMessage)
 
-	// get bot token
-	token, err := t.getBotToken()
-	if err != nil {
-		return http.StatusInternalServerError, err
-	}
+	// send chat task
+	go func() {
+		toSend := tgbotapi.NewMessage(chatId, message)
 
-	// create the request
-	body := new(bytes.Buffer)
-	if err = json.NewEncoder(body).Encode(payload); err != nil {
-		return http.StatusInternalServerError, err
-	}
+		if useMarkdown {
+			toSend.ParseMode = tgbotapi.ModeMarkdownV2
+		}
 
-	urlEndpoint := t.Config.Telegram.Url + "/bot" + token + endpoint
-	httpReq, err := http.NewRequestWithContext(tgContext, method, urlEndpoint, body)
-	if err != nil {
-		return http.StatusInternalServerError, err
-	}
+		if m, err := t.BotAPI.Send(toSend); err != nil {
+			errChan <- err
+		} else {
+			result <- &RespSendMessage{
+				MessageID: int64(m.MessageID),
+				Recipient: fmt.Sprintf("%s %s", m.Chat.FirstName, m.Chat.LastName),
+			}
+		}
+	}()
 
-	httpResp, err := client.Do(httpReq)
-	if err != nil {
-		return http.StatusInternalServerError, err
-	}
+	// poll goroutine
+	for {
+		select {
+		// timeout, or context get canceled somehow
+		case <-chatCtx.Done():
+			if err := chatCtx.Err(); err == context.DeadlineExceeded {
+				return nil, status.Error(codes.DeadlineExceeded, "Timeout")
+			} else {
+				return nil, status.Error(codes.Canceled, err.Error())
+			}
 
-	// read response body
-	if resp != nil {
-		if err = json.NewDecoder(httpResp.Body).Decode(resp); err != nil {
-			return http.StatusInternalServerError, err
+		// case: error, something happened, the source must be from Telegram API
+		case err := <-errChan:
+			return nil, status.Error(codes.Aborted, err.Error())
+
+		// case: sending chat success
+		case resp := <-result:
+			return resp, nil
 		}
 	}
-
-	return httpResp.StatusCode, nil
-}
-
-func (t *TelegramService) getBotToken() (string, error) {
-	token := os.Getenv(t.Config.Telegram.TokenEnv)
-	if len(token) == 0 {
-		return "", fmt.Errorf("Empty token in environment")
-	}
-
-	return token, nil
 }
